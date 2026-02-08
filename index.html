@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,8 @@
             overflow-x: hidden;
         }
 
-        #menu-view, #combo-view {
+        #menu-view,
+        #combo-view {
             width: 100%;
             max-width: 600px;
             display: flex;
@@ -55,7 +57,7 @@
             border-radius: 1rem;
             cursor: pointer;
             transition: transform 0.2s, opacity 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         button:hover {
@@ -88,6 +90,7 @@
                 font-size: 1.5rem;
                 padding: 1.2rem;
             }
+
             .strike-item {
                 font-size: 1.8rem;
             }
@@ -106,6 +109,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div id="menu-view">
@@ -151,11 +155,46 @@
 
         function generateCombo(count) {
             comboList.innerHTML = '';
-            let lastStrike = '';
+            let lastStrike = null;
             const selectedStrikes = [];
 
+            const getStrikeType = (strike) => {
+                if (strike.includes('(front)')) return 'front';
+                if (strike.includes('(rear)')) return 'rear';
+                return 'neutral';
+            };
+
+            const isSideKick = (strike) => strike.toLowerCase().includes('side kick');
+
             for (let i = 0; i < count; i++) {
-                let availableStrikes = strikes.filter(s => s !== lastStrike);
+                let availableStrikes = strikes.filter(strike => {
+                    // Rule: Don't repeat any strikes back to back
+                    if (strike === lastStrike) return false;
+
+                    // Rule: if there's a side kick in the combo, it needs to be the first strike
+                    // This implies index 0 can be a side kick, but index > 0 cannot.
+                    if (i > 0 && isSideKick(strike)) return false;
+
+                    if (lastStrike) {
+                        const lastType = getStrikeType(lastStrike);
+                        const currentType = getStrikeType(strike);
+
+                        // Rule: no rear kicks in a row
+                        if (lastType === 'rear' && currentType === 'rear') return false;
+
+                        // Rule: no front kicks in a row
+                        if (lastType === 'front' && currentType === 'front') return false;
+                    }
+
+                    return true;
+                });
+
+                // Fallback: if somehow no strikes are available (shouldn't happen with this set), 
+                // pick any strike except the last one to avoid infinite loop or crash
+                if (availableStrikes.length === 0) {
+                    availableStrikes = strikes.filter(s => s !== lastStrike && !isSideKick(s));
+                }
+
                 const randomStrike = availableStrikes[Math.floor(Math.random() * availableStrikes.length)];
                 selectedStrikes.push(randomStrike);
                 lastStrike = randomStrike;
@@ -178,4 +217,5 @@
         });
     </script>
 </body>
+
 </html>
