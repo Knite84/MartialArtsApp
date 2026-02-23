@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Martial Arts Combo Generator</title>
+    <title>Martial Arts Combo & Drills</title>
     <style>
         :root {
             --bg-color: #91ad8c;
@@ -32,8 +32,10 @@
             overflow-x: hidden;
         }
 
+        #home-view,
         #menu-view,
-        #combo-view {
+        #combo-view,
+        #drill-view {
             width: 100%;
             max-width: 600px;
             display: flex;
@@ -78,11 +80,18 @@
             width: 100%;
         }
 
-        .strike-item {
+        .strike-item,
+        #drill-text {
             font-size: 2.5rem;
             text-align: center;
             font-weight: bold;
             line-height: 1.2;
+        }
+
+        #drill-text {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
         }
 
         @media (max-width: 480px) {
@@ -91,19 +100,24 @@
                 padding: 1.2rem;
             }
 
-            .strike-item {
+            .strike-item,
+            #drill-text {
                 font-size: 1.8rem;
+            }
+
+            #drill-text {
+                font-size: 2.5rem;
             }
         }
 
-        #back-btn {
+        .back-btn {
             background-color: transparent;
             color: var(--font-color);
             border: 3px solid var(--font-color);
             font-weight: bold;
         }
 
-        #back-btn:hover {
+        .back-btn:hover {
             background-color: var(--font-color);
             color: var(--bg-color);
         }
@@ -112,51 +126,74 @@
 
 <body>
 
-    <div id="menu-view">
+    <div id="home-view">
+        <button id="nav-combos">Combos</button>
+        <button id="nav-drills">Drills</button>
+    </div>
+
+    <div id="menu-view" class="hidden">
         <!-- Buttons 2 through 10 will be generated here -->
+        <button class="back-btn" id="menu-back-btn">Back</button>
     </div>
 
     <div id="combo-view" class="hidden">
         <div id="combo-list"></div>
-        <button id="back-btn">Back</button>
+        <button class="back-btn" id="combo-back-btn">Back</button>
+    </div>
+
+    <div id="drill-view" class="hidden">
+        <div id="drill-text">Ready?</div>
+        <button class="back-btn" id="drill-back-btn">Back</button>
     </div>
 
     <script>
         const strikes = [
-            "Jab (left)",
-            "Cross (right)",
-            "Hook (left)",
-            "Right Hook (right)",
-            "Body Cross (right)",
-            "Ridge Hand (left)",
-            "Ridge Hand (right)",
-            "Round Kick (front)",
-            "Rear Kick (rear)",
-            "Side Kick (front)",
-            "Side Kick (rear)",
-            "Back Kick (front)",
-            "Back Kick (rear)",
-            "Block (left)",
-            "Block (right)"
+            "Jab (left)", "Cross (right)", "Hook (left)", "Right Hook (right)",
+            "Body Cross (right)", "Ridge Hand (left)", "Ridge Hand (right)",
+            "Round Kick (front)", "Rear Kick (rear)", "Side Kick (front)",
+            "Side Kick (rear)", "Back Kick (front)", "Back Kick (rear)",
+            "Block (left)", "Block (right)"
         ];
 
+        const drillOptions = ["trees", "fence", "rock"];
+
+        // Views
+        const homeView = document.getElementById('home-view');
         const menuView = document.getElementById('menu-view');
         const comboView = document.getElementById('combo-view');
-        const comboList = document.getElementById('combo-list');
-        const backBtn = document.getElementById('back-btn');
+        const drillView = document.getElementById('drill-view');
 
-        // Generate menu buttons
+        // Logic Containers
+        const comboList = document.getElementById('combo-list');
+        const drillText = document.getElementById('drill-text');
+
+        // Nav Buttons
+        document.getElementById('nav-combos').addEventListener('click', () => showView(menuView));
+        document.getElementById('nav-drills').addEventListener('click', startDrills);
+
+        // Back Buttons
+        document.getElementById('menu-back-btn').addEventListener('click', () => showView(homeView));
+        document.getElementById('combo-back-btn').addEventListener('click', () => showView(menuView));
+        document.getElementById('drill-back-btn').addEventListener('click', stopDrills);
+
+        function showView(view) {
+            [homeView, menuView, comboView, drillView].forEach(v => v.classList.add('hidden'));
+            view.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        // Generate menu buttons for Combos
         for (let i = 2; i <= 10; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
             btn.addEventListener('click', () => generateCombo(i));
-            menuView.appendChild(btn);
+            // Insert before the back button
+            menuView.insertBefore(btn, document.getElementById('menu-back-btn'));
         }
 
         function generateCombo(count) {
             comboList.innerHTML = '';
             let lastStrike = null;
-            const selectedStrikes = [];
 
             const getStrikeType = (strike) => {
                 if (strike.includes('(front)')) return 'front';
@@ -169,41 +206,24 @@
 
             for (let i = 0; i < count; i++) {
                 let availableStrikes = strikes.filter(strike => {
-                    // Rule: Don't repeat any strikes back to back
                     if (strike === lastStrike) return false;
-
-                    // Rule: if there's a side kick in the combo, it needs to be the first strike
-                    // This implies index 0 can be a side kick, but index > 0 cannot.
                     if (i > 0 && isSideKick(strike)) return false;
-
                     if (lastStrike) {
                         const lastType = getStrikeType(lastStrike);
                         const currentType = getStrikeType(strike);
-
-                        // Rule: no rear kicks in a row
                         if (lastType === 'rear' && currentType === 'rear') return false;
-
-                        // Rule: no front kicks in a row
                         if (lastType === 'front' && currentType === 'front') return false;
-
-                        // Rule: no round kicks following a rear kick
                         if (lastType === 'rear' && currentType === 'round') return false;
-
-                        // Rule: no rear kicks following a round kick
                         if (lastType === 'round' && currentType === 'rear') return false;
                     }
-
                     return true;
                 });
 
-                // Fallback: if somehow no strikes are available (shouldn't happen with this set), 
-                // pick any strike except the last one to avoid infinite loop or crash
                 if (availableStrikes.length === 0) {
                     availableStrikes = strikes.filter(s => s !== lastStrike && !isSideKick(s));
                 }
 
                 const randomStrike = availableStrikes[Math.floor(Math.random() * availableStrikes.length)];
-                selectedStrikes.push(randomStrike);
                 lastStrike = randomStrike;
 
                 const strikeDiv = document.createElement('div');
@@ -212,16 +232,41 @@
                 comboList.appendChild(strikeDiv);
             }
 
-            menuView.classList.add('hidden');
-            comboView.classList.remove('hidden');
-            window.scrollTo(0, 0);
+            showView(comboView);
         }
 
-        backBtn.addEventListener('click', () => {
-            comboView.classList.add('hidden');
-            menuView.classList.remove('hidden');
-            window.scrollTo(0, 0);
-        });
+        // Drill Logic
+        let drillInterval = null;
+        let drillTimeout = null;
+        let lastDrillOption = null;
+
+        function startDrills() {
+            showView(drillView);
+            lastDrillOption = null;
+            runDrillCycle();
+
+            // Total 2-minute session
+            drillTimeout = setTimeout(() => {
+                stopDrills();
+            }, 120000);
+
+            // Change every 15 seconds
+            drillInterval = setInterval(runDrillCycle, 15000);
+        }
+
+        function runDrillCycle() {
+            let available = drillOptions.filter(opt => opt !== lastDrillOption);
+            const next = available[Math.floor(Math.random() * available.length)];
+            drillText.textContent = next;
+            lastDrillOption = next;
+        }
+
+        function stopDrills() {
+            clearInterval(drillInterval);
+            clearTimeout(drillTimeout);
+            showView(homeView);
+            drillText.textContent = "Ready?";
+        }
     </script>
 </body>
 
