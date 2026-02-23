@@ -159,6 +159,7 @@
             const getStrikeType = (strike) => {
                 if (strike.includes('(front)')) return 'front';
                 if (strike.includes('(rear)')) return 'rear';
+                if (strike.includes('Round Kick')) return 'round';
                 return 'neutral';
             };
 
@@ -182,6 +183,12 @@
 
                         // Rule: no front kicks in a row
                         if (lastType === 'front' && currentType === 'front') return false;
+
+                        // Rule: no round kicks following a rear kick
+                        if (lastType === 'rear' && currentType === 'round') return false;
+
+                        // Rule: no rear kicks following a round kick
+                        if (lastType === 'round' && currentType === 'rear') return false;
                     }
 
                     return true;
